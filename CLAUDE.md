@@ -12,7 +12,7 @@ This is the **initial website version**: front-end only, **all data mocked** in 
 
 - Remote: `https://github.com/samcsj/project-tracking-website.git`
 - Default branch: `main`
-- Latest release tag: **`v1.0`** (initial release, commit `d2adc2c`)
+- Latest release tag: **`v2.0`** (Master Horizontal View, commit `939bbff`). Prior: `v1.0` (initial release, commit `d2adc2c`).
 
 The local `gh` CLI is **not installed** — use plain `git` for push/pull/branch. PR creation and GitHub Releases must happen in the GitHub web UI.
 
@@ -116,6 +116,17 @@ Same maths drives the today-line and month axis. There is no Gantt library. To e
 
 `components/projects/ProjectsTable.tsx` renders a flat row array — no nested DOM tricks, no per-row state. Dropping in `@tanstack/react-virtual` is purely additive; no restructuring required.
 
+### Master View — columns are generated, not hand-listed
+
+`/master-view` (added in v2.0) renders one row per project with phases and milestones expanded into grouped column blocks. The pure generator lives in `lib/master-view.ts`:
+
+- `deriveDefinitions(phases)` pulls unique phase + milestone names from the dataset (no STAGE_NAMES coupling).
+- `generateMasterViewColumns(config, phaseDefs, milestoneDefs)` returns the *visible* column groups only — hidden phases / milestones / date-types / fields produce no columns, so the table never renders empty placeholders.
+- `generateMasterViewRows(projects, phases, config)` filters projects and indexes their phases by name for O(1) cell lookup.
+- `getCellValue(row, col)` is the single extraction point.
+
+All UI state (project filters + visibility toggles) lives in one `MasterViewConfig` object in `MasterViewClient.tsx`. **When adding new phase-level or milestone-level fields, extend the column-builder in `lib/master-view.ts` rather than hand-editing the table component.**
+
 ## Conventions
 
 - **Server components by default.** Add `"use client"` only when the file uses state, effects, browser APIs, or event handlers. The shell components (`Sidebar`, `TopBar`) are client because they use `usePathname` / inputs; almost everything else is server.
@@ -131,6 +142,8 @@ Same maths drives the today-line and month axis. There is no Gantt library. To e
 | A new project status or risk level | `lib/types.ts` (union) **and** every map in `lib/status.ts` (TS will flag misses) |
 | A new filter on the projects table | `components/projects/ProjectFilters.tsx` + `app/projects/ProjectsClient.tsx` (state, URL effect, `useMemo` filter) |
 | A new column on the projects table | `components/projects/ProjectsTable.tsx` (and `Project` type if it's a new field) |
+| A new field on the Master View phase/milestone groups | `lib/master-view.ts` (`buildPhaseColumns` / `buildMilestoneColumns` + `getCellValue`) — the table component picks it up automatically |
+| A new filter on the Master View | `MasterViewProjectFilters` in `lib/master-view.ts` + a `<Select>` in `components/master-view/MasterViewFilters.tsx` |
 | A new dashboard tile | A new component under `components/dashboard/` + slot into `app/page.tsx` grid |
 | A new Gantt feature | `components/timeline/GanttChart.tsx` — keep working in `%` of date range |
 | A new page | New folder under `app/`. If interactive, use the wrapper pattern (`page.tsx` server + `<Page>Client.tsx` client). |
