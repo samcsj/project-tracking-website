@@ -12,8 +12,9 @@ This is the **initial website version**: front-end only, **all data mocked** in 
 
 - Remote: `https://github.com/samcsj/project-tracking-website.git`
 - Default branch: `main`
+- Latest release tag: **`v1.0`** (initial release, commit `d2adc2c`)
 
-The local `gh` CLI is **not installed** — use plain `git` for push/pull/branch. PR creation must happen in the GitHub web UI.
+The local `gh` CLI is **not installed** — use plain `git` for push/pull/branch. PR creation and GitHub Releases must happen in the GitHub web UI.
 
 ## Commands
 
@@ -25,6 +26,17 @@ npm run lint         # Next.js built-in ESLint
 ```
 
 No test runner is configured.
+
+## Verification — "done" means tested
+
+There is no test runner, so the contract for "done" on this repo is:
+
+1. **`npm run build` must succeed.** It runs the TypeScript type-check and the Next.js compile together — a green build catches almost every regression that matters here.
+2. **Smoke-check any affected route in the dev server.** With `npm run dev` running, hit each changed page and confirm a 200 + no compile errors in the dev log.
+
+**Run both after every code change**, even small ones. The most common silent breaks here are not type errors — they're stale `.next` cache and Tailwind classes that didn't make it into the generated CSS, neither of which TypeScript catches.
+
+If colours/layout suddenly disappear after editing class strings (especially anything in `lib/status.ts`): kill the dev server, `rm -rf .next`, then `npm run dev`. Hot-reload occasionally retains the old JIT class set or a stale webpack chunk map and serves a half-broken page.
 
 ## Version constraints
 
@@ -70,6 +82,8 @@ All status / risk colours come from **one place**: `lib/status.ts`. It exports p
 | `heatmapCell(util)`          | Utilization % → cell colour (slate → emerald → amber → orange → red) |
 
 If you add a status, you must extend the relevant lookup(s) — TypeScript will flag every missing entry because the maps are `Record<Status, string>`.
+
+**Tailwind content scope is load-bearing.** `tailwind.config.ts` scans `./app/**`, `./components/**`, **and `./lib/**`**. The `./lib/**` entry exists because every status class string lives in `lib/status.ts` as a literal — if the JIT scanner can't see those strings, classes like `bg-emerald-500` are tree-shaken out and bars/badges render with no background. If you add a new top-level file that emits Tailwind class names, extend the `content` glob accordingly.
 
 ### Tailwind tokens + component classes
 
