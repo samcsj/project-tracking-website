@@ -26,11 +26,19 @@ export const phaseStatusDot: Record<PhaseStatus, string> = {
 };
 
 export const phaseStatusBar: Record<PhaseStatus, string> = {
-  Done: "bg-emerald-500/90",
-  "In Progress": "bg-blue-500/90",
-  "At Risk": "bg-amber-500/90",
-  Delayed: "bg-red-500/90",
+  Done: "bg-emerald-500",
+  "In Progress": "bg-blue-500",
+  "At Risk": "bg-amber-500",
+  Delayed: "bg-red-500",
   Pending: "bg-slate-300",
+};
+
+export const phaseStatusBarText: Record<PhaseStatus, string> = {
+  Done: "text-white",
+  "In Progress": "text-white",
+  "At Risk": "text-white",
+  Delayed: "text-white",
+  Pending: "text-slate-600",
 };
 
 export const projectStatusBadge: Record<ProjectStatus, string> = {

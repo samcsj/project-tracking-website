@@ -3,8 +3,13 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { differenceInCalendarDays, format, parseISO } from "date-fns";
-import type { Phase, Project } from "@/lib/types";
-import { phaseStatusBar, phaseStatusBadge, phaseStatusDot } from "@/lib/status";
+import type { Phase, PhaseStatus, Project } from "@/lib/types";
+import {
+  phaseStatusBar,
+  phaseStatusBadge,
+  phaseStatusBarText,
+  phaseStatusDot,
+} from "@/lib/status";
 import { Badge, Dot } from "@/components/ui/Badge";
 import { fmtShort } from "@/lib/date";
 
@@ -15,6 +20,23 @@ interface Props {
   rangeEnd: string;   // ISO
   today: string;      // ISO
 }
+
+/** Compact label for each stage so narrow bars still read clearly. */
+const PHASE_ABBREV: Record<string, string> = {
+  "Game Specification Preparation": "Spec Prep",
+  "Spec Briefing": "Brief",
+  "Art Development": "Art",
+  "Engine Development": "Engine",
+  "Animation Development": "Anim",
+  "Sound Development": "Sound",
+  "Frontend Development": "Frontend",
+  "UAT Push": "UAT",
+  "Group Testing": "Group Test",
+  "Pre-Production": "Pre-Prod",
+  "Go Live": "Go Live",
+};
+
+const ROW_HEIGHT = 60;
 
 export function GanttChart({ projects, phases, rangeStart, rangeEnd, today }: Props) {
   const [hover, setHover] = useState<Phase | null>(null);
@@ -54,10 +76,12 @@ export function GanttChart({ projects, phases, rangeStart, rangeEnd, today }: Pr
         {/* Right timeline header — month ticks */}
         <div className="relative border-b border-slate-200 bg-slate-50">
           <div className="relative h-10">
-            {months.map((m) => (
+            {months.map((m, i) => (
               <div
                 key={m.label}
-                className="absolute top-0 h-full border-l border-slate-200 pl-2 pt-2 text-[11px] font-medium text-slate-500"
+                className={`absolute top-0 h-full pl-2 pt-2 text-[11px] font-medium text-slate-500 ${
+                  i === 0 ? "" : "border-l border-slate-200"
+                }`}
                 style={{ left: `${m.left}%` }}
               >
                 {m.label}
@@ -77,9 +101,10 @@ export function GanttChart({ projects, phases, rangeStart, rangeEnd, today }: Pr
         {/* Rows */}
         {projects.map((p, projIdx) => {
           const projectPhases = phases.filter((ph) => ph.projectId === p.id);
+          const rowBg = projIdx % 2 ? "bg-slate-50/40" : "bg-white";
           return (
             <div key={p.id} className="contents">
-              <div className={`border-r border-b border-slate-200 px-4 py-3 ${projIdx % 2 ? "bg-slate-50/40" : "bg-white"}`}>
+              <div className={`border-r border-b border-slate-200 px-4 py-3 ${rowBg}`}>
                 <Link href={`/projects/${p.id}`} className="block">
                   <div className="text-sm font-medium text-slate-900 truncate">
                     {p.name}
@@ -90,39 +115,51 @@ export function GanttChart({ projects, phases, rangeStart, rangeEnd, today }: Pr
                 </Link>
               </div>
               <div
-                className={`relative border-b border-slate-200 ${projIdx % 2 ? "bg-slate-50/40" : "bg-white"}`}
-                style={{ height: 56 }}
+                className={`relative border-b border-slate-200 ${rowBg}`}
+                style={{ height: ROW_HEIGHT }}
               >
-                {/* faint vertical month gridlines */}
-                {months.map((m) => (
-                  <div
-                    key={m.label}
-                    className="absolute top-0 h-full border-l border-slate-100"
-                    style={{ left: `${m.left}%` }}
-                  />
-                ))}
+                {/* Vertical month gridlines — same colour as header so the
+                    columns read as one continuous line. Skip the 0% line
+                    because the left-rail's border-r already sits there. */}
+                {months.map((m, i) =>
+                  i === 0 ? null : (
+                    <div
+                      key={m.label}
+                      className="absolute top-0 h-full border-l border-slate-200"
+                      style={{ left: `${m.left}%` }}
+                    />
+                  )
+                )}
                 {/* today line */}
                 <div
-                  className="absolute top-0 z-10 h-full w-px bg-indigo-500/60"
+                  className="absolute top-0 z-10 h-full w-px bg-indigo-500/70"
                   style={{ left: `${todayPct}%` }}
                 />
-                {/* phase bars */}
+                {/* Phase bars */}
                 {projectPhases.map((ph) => {
                   const leftPct = pct(ph.latestStartDate);
                   const widthPct = Math.max(
-                    1.5,
+                    1.2,
                     pct(ph.latestEndDate) - leftPct
                   );
+                  const status: PhaseStatus = ph.status;
                   return (
-                    <button
+                    <div
                       key={ph.id}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       onMouseEnter={() => setHover(ph)}
-                      onMouseLeave={() => setHover((cur) => (cur?.id === ph.id ? null : cur))}
-                      className={`absolute top-1/2 -translate-y-1/2 h-5 rounded-md ring-1 ring-white/40 ${phaseStatusBar[ph.status]} hover:ring-2 hover:ring-slate-900/10 transition`}
+                      onMouseLeave={() =>
+                        setHover((cur) => (cur?.id === ph.id ? null : cur))
+                      }
+                      className={`absolute top-1/2 z-[5] flex h-7 -translate-y-1/2 cursor-pointer items-center overflow-hidden rounded-md px-1.5 ring-1 ring-white/50 transition hover:ring-2 hover:ring-slate-900/15 ${phaseStatusBar[status]} ${phaseStatusBarText[status]}`}
                       style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
                       title={`${ph.name} — ${ph.status}`}
-                    />
+                    >
+                      <span className="truncate whitespace-nowrap text-[10px] font-medium leading-none">
+                        {PHASE_ABBREV[ph.name] ?? ph.name}
+                      </span>
+                    </div>
                   );
                 })}
               </div>
@@ -131,7 +168,7 @@ export function GanttChart({ projects, phases, rangeStart, rangeEnd, today }: Pr
         })}
       </div>
 
-      {/* Hover tooltip card (anchored to chart bottom) */}
+      {/* Hover tooltip card */}
       {hover ? (
         <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-sm">
           <div className="flex flex-wrap items-center gap-2">
@@ -145,7 +182,9 @@ export function GanttChart({ projects, phases, rangeStart, rangeEnd, today }: Pr
           <div className="muted mt-1">
             Expected {fmtShort(hover.expectedStartDate)} → {fmtShort(hover.expectedEndDate)} ·
             Latest {fmtShort(hover.latestStartDate)} → {fmtShort(hover.latestEndDate)}
-            {hover.actualStartDate ? ` · Actual ${fmtShort(hover.actualStartDate)} → ${hover.actualEndDate ? fmtShort(hover.actualEndDate) : "in progress"}` : ""}
+            {hover.actualStartDate
+              ? ` · Actual ${fmtShort(hover.actualStartDate)} → ${hover.actualEndDate ? fmtShort(hover.actualEndDate) : "in progress"}`
+              : ""}
           </div>
         </div>
       ) : null}
