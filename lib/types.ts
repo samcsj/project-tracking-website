@@ -46,6 +46,8 @@ export interface Project {
   targetLiveDate: string;
   currentPhase: string;
   riskLevel: RiskLevel;
+  /** Primary function team responsible for the project. Optional — derived when omitted. */
+  team?: FunctionTeam;
 }
 
 export interface Phase {
@@ -62,6 +64,10 @@ export interface Phase {
   expectedEndDate: string;
   actualStartDate?: string;
   actualEndDate?: string;
+  /** Phase-level owner — defaults to project PIC if unset. */
+  pic?: string;
+  /** Free-text note attached to the phase/milestone. */
+  remark?: string;
 }
 
 export interface JiraSummary {

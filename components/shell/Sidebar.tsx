@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   KanbanSquare,
   GanttChartSquare,
+  Table2,
   Users,
   ShieldCheck,
   BarChart3,
@@ -17,6 +18,7 @@ import {
 const nav = [
   { href: "/",            label: "Dashboard",     icon: LayoutDashboard },
   { href: "/projects",    label: "Projects",      icon: KanbanSquare },
+  { href: "/master-view", label: "Master View",   icon: Table2 },
   { href: "/timeline",    label: "Timeline",      icon: GanttChartSquare },
   { href: "/resources",   label: "Resources",     icon: Users },
   { href: "/qa",          label: "QA Monitoring", icon: ShieldCheck },

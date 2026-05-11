@@ -224,6 +224,21 @@ function isoOffset(base: Date, days: number): string {
  * Build 11 phases per project. Date offsets are seeded by project index so
  * dates spread realistically before and after TODAY (2026-05-11).
  */
+// Stand-in PIC and remark pools so master-view cells have realistic content.
+const PHASE_PIC_POOL = [
+  "Maya Tanaka", "Devon Hayes", "Lina Okonkwo", "Rahul Iyer",
+  "Eleanor Frost", "Sam Patel", "Yusuf Demir", "Hana Lee",
+  "Carlos Mendes", "Ines Marchetti", "Kenji Watanabe", "Olivia Brand",
+];
+
+const PHASE_REMARK_POOL: Record<PhaseStatus, string[]> = {
+  Done: ["Signed off.", "Closed on schedule.", "Delivered with no blockers."],
+  "In Progress": ["Tracking on plan.", "Mid-sprint review pending.", "Daily standups in progress."],
+  "At Risk": ["Vendor dependency slipping.", "Capacity tight this week.", "Awaiting brand approval."],
+  Delayed: ["Pushed by 1 sprint.", "Re-baseline requested.", "Blocked on integration test."],
+  Pending: ["Not yet started.", "Kickoff planned next week.", "Awaiting upstream signoff."],
+};
+
 function buildPhases(): Phase[] {
   const baseDay = new Date("2026-02-01T00:00:00Z");
   const phases: Phase[] = [];
@@ -266,6 +281,10 @@ function buildPhases(): Phase[] {
       // Cancelled / On Hold project — show pending for everything not yet done.
       if (project.status === "Cancelled") status = "Pending";
 
+      // Deterministic seeded pick so PIC/remark stay stable across renders.
+      const picSeed = (projIdx * 7 + stageIdx * 3) % PHASE_PIC_POOL.length;
+      const remarkSeed = (projIdx * 5 + stageIdx) % PHASE_REMARK_POOL[status].length;
+
       phases.push({
         id: `${project.id}-s${stageIdx + 1}`,
         projectId: project.id,
@@ -279,11 +298,20 @@ function buildPhases(): Phase[] {
         expectedEndDate: expectedEnd,
         actualStartDate: actualStart,
         actualEndDate: actualEnd,
+        pic: PHASE_PIC_POOL[picSeed],
+        remark: PHASE_REMARK_POOL[status][remarkSeed],
       });
     });
   });
   return phases;
 }
+
+// Backfill an optional `team` per project from the current-phase function.
+// Done here (not in the project literals) to keep that block readable.
+projects.forEach((p) => {
+  const fn = STAGE_FUNCTIONS[p.currentPhase as (typeof STAGE_NAMES)[number]];
+  if (fn) p.team = fn;
+});
 
 export const phases: Phase[] = buildPhases();
 
