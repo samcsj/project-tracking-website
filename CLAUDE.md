@@ -8,6 +8,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is the **initial website version**: front-end only, **all data mocked** in `lib/data.ts`. No backend, no auth, no tests.
 
+## Repository
+
+- Remote: `https://github.com/samcsj/project-tracking-website.git`
+- Default branch: `main`
+
+The local `gh` CLI is **not installed** — use plain `git` for push/pull/branch. PR creation must happen in the GitHub web UI.
+
 ## Commands
 
 ```bash
